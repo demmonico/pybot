@@ -61,7 +61,7 @@ def main():
 #     logger = logging.getLogger(__name__)
 #     logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 
-    with open('configs/bot_config.json') as f:
+    with open('data/bot_config.json') as f:
         BOT_CONFIG = json.load(f)
     bot = Bot(BOT_CONFIG)
 
