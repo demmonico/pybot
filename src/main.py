@@ -1,3 +1,4 @@
+import sys, getopt
 import random
 import json
 import logging
@@ -13,7 +14,7 @@ class Bot:
     def __init__(self, config):
         # intents
         self.INTENTS = config[self.CONFIG_SECTION_INTENTS]
-        print(f'BOT_CONFIG: loaded "{len(self.INTENTS.keys())}" intents')
+        logging.debug(f'BOT_CONFIG: loaded "{len(self.INTENTS.keys())}" intents')
 
         # intent examples
         self.INTENTS_EXAMPLES = {}
@@ -25,11 +26,9 @@ class Bot:
 
         # failure_phrases
         self.PHRASES = config[self.CONFIG_SECTION_FAILURE_PHRASES]
-        print(f'BOT_CONFIG: loaded "{len(self.PHRASES)}" failure_phrases')
+        logging.debug(f'BOT_CONFIG: loaded "{len(self.PHRASES)}" failure_phrases')
 
         self.intentAssistant = intents.IntentAssistant(self.INTENTS_EXAMPLES)
-
-        print('-' * 20)
 
 
     def answer(self, phrase):
@@ -40,7 +39,7 @@ class Bot:
             if answer:
                 return answer
 
-        return gen_random_answer()
+        return self.gen_random_answer()
 
 
     def gen_answer_by_intent(self, intent):
@@ -50,25 +49,55 @@ class Bot:
 
 
     def gen_random_answer(self):
-        return random.choice(BOT_CONFIG[self.CONFIG_SECTION_FAILURE_PHRASES])
+        return random.choice(self.PHRASES)
 
 
 #-----------------------------------#
 # MAIN
 
-def main():
-# TODO
-#     logger = logging.getLogger(__name__)
-#     logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+def main(argv):
+    BOT_STOP_WORD = '/stop'
 
+    # arguments
+    try:
+        opts, args = getopt.getopt(argv, "-v")
+    except getopt.GetoptError:
+        raise getopt.GetoptError
+        sys.exit(2)
+
+    is_verbose_mode = False
+    for opt, arg in opts:
+        if opt == '-v':
+            is_verbose_mode = True
+
+    # logging
+    logger = logging.getLogger(__name__)
+    logging_verbosity = logging.DEBUG if is_verbose_mode else logging.WARNING
+    logging.basicConfig(level=logging_verbosity, format='[%(asctime)s] %(levelname)s: %(message)s')
+
+    # configs
     with open('data/bot_config.json') as f:
         BOT_CONFIG = json.load(f)
     bot = Bot(BOT_CONFIG)
 
-    for phrase in ['Helllo', 'How are you?', 'Bye']:
-        print(bot.answer(phrase))
+    # non-interactive mode
+    if len(args) == 1:
+        input_text = args[0]
+        print(f"- {input_text}")
+        print(f"- {bot.answer(input_text)}")
+        return
+
+    # interactive mode
+    input_text = ''
+    while True:
+        input_text = input()
+        if input_text == BOT_STOP_WORD:
+            break
+
+        print(bot.answer(input_text))
+
 
 #------------------------------#
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
